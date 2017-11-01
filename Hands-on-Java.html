@@ -1,0 +1,221 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+    <title>Harp-DAAL Programming Interface with Java</title>
+    <link type="text/css" rel="stylesheet" href="assets/css/github-markdown.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/pilcrow.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/hljs-github.min.css"/>
+  </head>
+  <body>
+    <article class="markdown-body"><h1 id="harp-daal-programming-interface-with-java"><a class="header-link" href="#harp-daal-programming-interface-with-java"></a>Harp-DAAL Programming Interface with Java</h1>
+<p>This section provides you of step-by-step instructions to accomplish a Harp-DAAL application for linear regression. 
+In each of the following steps, you will need insert codes into file <em>LinRegDaalCollectiveMapper.java</em> </p>
+<ol class="list">
+<li>Create Harp-DAAL Skeleton </li>
+<li>Read in data from HDFS</li>
+<li>Convert Data to DAAL side</li>
+<li>Local Training </li>
+<li>Communication among Mappers</li>
+<li>Finalize Training</li>
+<li>Test model &amp; Print out results</li>
+</ol>
+<p>After each step, you shall re-compile the harp-daal codes at the root folder of harp project,</p>
+<pre class="hljs"><code>mvn clean package</code></pre><p>and then run the script for harp-daal linear regression from the NameNode of Hadoop cluster</p>
+<pre class="hljs"><code>./harp-daal-linreg.sh</code></pre><h2 id="create-harp-daal-skeleton"><a class="header-link" href="#create-harp-daal-skeleton"></a>Create Harp-DAAL Skeleton</h2>
+<p>The code snippet is the skeleton of our mapper function defined for linear regression, which
+reads in file names of training data within HDFS and retrieves configuration object from context.</p>
+<pre class="hljs"><code>
+    <span class="hljs-function"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title">mapCollective</span><span class="hljs-params">(
+      KeyValReader reader, Context context)</span>
+    <span class="hljs-keyword">throws</span> IOException, InterruptedException </span>{
+      <span class="hljs-keyword">long</span> startTime = System.currentTimeMillis();
+      List&lt;String&gt; trainingDataFiles =
+      <span class="hljs-keyword">new</span> LinkedList&lt;String&gt;();
+
+      <span class="hljs-comment">//read in data file names from HDFS</span>
+      <span class="hljs-keyword">while</span> (reader.nextKeyValue()) {
+        String key = reader.getCurrentKey();
+        String value = reader.getCurrentValue();
+        LOG.info(<span class="hljs-string">"Key: "</span> + key + <span class="hljs-string">", Value: "</span>
+          + value);
+        System.out.println(<span class="hljs-string">"file name : "</span> + value);
+        trainingDataFiles.add(value);
+      }
+
+      Configuration conf = context.getConfiguration();
+      Path pointFilePath = <span class="hljs-keyword">new</span> Path(trainingDataFiles.get(<span class="hljs-number">0</span>));
+      System.out.println(<span class="hljs-string">"path = "</span>+ pointFilePath.getName());
+      FileSystem fs = pointFilePath.getFileSystem(conf);
+      FSDataInputStream in = fs.open(pointFilePath);
+
+      <span class="hljs-comment">// --------------- start body of linear regression ---------------</span>
+
+      <span class="hljs-comment">// --------------- End body of linear regression ---------------</span>
+
+      LOG.info(<span class="hljs-string">"Total iterations in master view: "</span>
+        + (System.currentTimeMillis() - startTime));
+      <span class="hljs-keyword">this</span>.freeMemory();
+      <span class="hljs-keyword">this</span>.freeConn();
+      System.gc();
+    }</code></pre><h2 id="read-in-data-from-hdfs"><a class="header-link" href="#read-in-data-from-hdfs"></a>Read in data from HDFS</h2>
+<p>Harp-DAAL provides module to load training data from HDFS by using multi-threads of Java</p>
+<ul class="list">
+<li>trainingDataFiles </li>
+<li>nDependentVariables</li>
+</ul>
+<p>The loaded data points (feature vector) are stored as a List of primitive double array</p>
+<pre class="hljs"><code><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">runLinReg</span><span class="hljs-params">(List&lt;String&gt; trainingDataFiles, 
+      Configuration conf, Context context)</span> 
+      <span class="hljs-keyword">throws</span> IOException </span>{
+
+      ts_start = System.currentTimeMillis();
+      ts1 = System.currentTimeMillis();
+
+      <span class="hljs-comment">// extracting points from csv files</span>
+      List&lt;List&lt;<span class="hljs-keyword">double</span>[]&gt;&gt; pointArrays = 
+      LinRegUtil.loadPoints(trainingDataFiles, pointsPerFile,
+      vectorSize, nDependentVariables, conf, numThreads);
+
+      List&lt;<span class="hljs-keyword">double</span>[]&gt; featurePoints = <span class="hljs-keyword">new</span> LinkedList&lt;&gt;();
+      <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i&lt;pointArrays.size(); i++){
+          featurePoints.add(pointArrays.get(i).get(<span class="hljs-number">0</span>));
+      }
+      List&lt;<span class="hljs-keyword">double</span>[]&gt; labelPoints = <span class="hljs-keyword">new</span> LinkedList&lt;&gt;();
+      <span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> i = <span class="hljs-number">0</span>; i&lt;pointArrays.size(); i++){
+          labelPoints.add(pointArrays.get(i).get(<span class="hljs-number">1</span>));
+      }
+
+      ts2 = System.currentTimeMillis();
+      load_time += (ts2 - ts1);
+
+}</code></pre><h2 id="convert-data-from-harp-to-daal"><a class="header-link" href="#convert-data-from-harp-to-daal"></a>Convert Data From Harp to DAAL</h2>
+<ul class="list">
+<li>Data points are aggregated into primitive array buffer</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-comment">// converting data to Numeric Table</span>
+<span class="hljs-keyword">long</span> nFeature = vectorSize;
+<span class="hljs-keyword">long</span> nLabel = nDependentVariables;
+<span class="hljs-keyword">long</span> totalLengthFeature = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">long</span> totalLengthLabel = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">long</span>[] array_startP_feature = <span class="hljs-keyword">new</span> <span class="hljs-keyword">long</span>[pointArrays.size()];
+<span class="hljs-keyword">double</span>[][] array_data_feature = <span class="hljs-keyword">new</span> <span class="hljs-keyword">double</span>[pointArrays.size()][];
+<span class="hljs-keyword">long</span>[] array_startP_label = <span class="hljs-keyword">new</span> <span class="hljs-keyword">long</span>[labelPoints.size()];
+<span class="hljs-keyword">double</span>[][] array_data_label = <span class="hljs-keyword">new</span> <span class="hljs-keyword">double</span>[labelPoints.size()][];
+
+<span class="hljs-comment">// ------------------- insert codes to copy data to primitive java arrays -----------</span>
+
+<span class="hljs-comment">// ------------------- copy data to primitive java arrays -------------------</span></code></pre><ul class="list">
+<li>Initialize daal table memory allocated at native side</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-keyword">long</span> featuretableSize = totalLengthFeature/nFeature;
+<span class="hljs-keyword">long</span> labeltableSize = totalLengthLabel/nLabel;
+
+<span class="hljs-comment">// ------------------- insert codes to initialize daal table -------------------</span>
+
+<span class="hljs-comment">// -------------------  initialize daal table -------------------</span></code></pre><ul class="list">
+<li>Convert Training data primitive array buffer into daal table by multi-threads</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-keyword">int</span> row_idx_feature = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">int</span> row_len_feature = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> k=<span class="hljs-number">0</span>; k&lt;featurePoints.size(); k++) 
+{
+
+<span class="hljs-comment">// ------------------- insert codes to convert data from harp to daal table -----------</span>
+<span class="hljs-comment">// ------------------- convert data from harp to daal table -------------------</span>
+}</code></pre><ul class="list">
+<li>Convert Testing data primitive array buffer into daal table by multi-threads</li>
+</ul>
+<pre class="hljs"><code>
+<span class="hljs-keyword">int</span> row_idx_label = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">int</span> row_len_label = <span class="hljs-number">0</span>;
+<span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> k=<span class="hljs-number">0</span>; k&lt;labelPoints.size(); k++) 
+{
+<span class="hljs-comment">// ------------------- insert codes to convert data from harp to daal table -----------</span>
+<span class="hljs-comment">// ------------------- convert data from harp to daal table -------------------</span>
+}</code></pre><h2 id="local-training"><a class="header-link" href="#local-training"></a>Local Training</h2>
+<ul class="list">
+<li>Create an algorithm object by invoking daal Java API, computation on slave mappers</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-comment">//set up threads used in local computation</span>
+Environment.setNumberOfThreads(numThreads);
+
+<span class="hljs-comment">// ------------- insert codes to create the TrainingDistributed algo </span>
+<span class="hljs-comment">// ------------- create the TrainingDistributed algo -------------</span></code></pre><ul class="list">
+<li>Load training data into algo.input object by their inputId</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-comment">// ------------- insert codes to load input training &amp; dependent data </span>
+<span class="hljs-comment">// ------------- load input training &amp; dependent data -------------</span>
+
+PartialResult pres = linearRegressionTraining.compute();</code></pre><ul class="list">
+<li>Launching local training computation by compute()</li>
+</ul>
+<h2 id="communication-among-mappers"><a class="header-link" href="#communication-among-mappers"></a>Communication among Mappers</h2>
+<ul class="list">
+<li>Create harp Table<ByteArray>, set partition id as mapper id</li>
+<li>Serialize partition results</li>
+</ul>
+<pre class="hljs"><code>
+Table&lt;ByteArray&gt; partialResultTable = <span class="hljs-keyword">new</span> Table&lt;&gt;(<span class="hljs-number">0</span>, <span class="hljs-keyword">new</span> ByteArrPlus());
+
+partialResultTable.addPartition(<span class="hljs-keyword">new</span> Partition&lt;&gt;(<span class="hljs-keyword">this</span>.getSelfID(), 
+serializePartialResult(pres)));</code></pre><ul class="list">
+<li>Use ``allreduce&quot; to communicate serialized partial resutls </li>
+</ul>
+<pre class="hljs"><code><span class="hljs-keyword">boolean</span> reduceStatus = <span class="hljs-keyword">false</span>;
+
+<span class="hljs-comment">// ------------ insert codes to launch allreduce comm operation among mappers </span>
+<span class="hljs-comment">// ------------ launch allreduce comm operation among mappers --------------</span>
+
+<span class="hljs-keyword">if</span>(!reduceStatus){
+  System.out.println(<span class="hljs-string">"reduce not successful"</span>);
+}
+<span class="hljs-keyword">else</span>{
+  System.out.println(<span class="hljs-string">"reduce successful"</span>);
+}</code></pre><h2 id="finalize-training"><a class="header-link" href="#finalize-training"></a>Finalize Training</h2>
+<ul class="list">
+<li>Create another algo to finalize training on master
+mapper upon allreduced partial result from slave mappers</li>
+</ul>
+<pre class="hljs"><code>
+<span class="hljs-keyword">if</span>(<span class="hljs-keyword">this</span>.isMaster()){
+<span class="hljs-comment">// ----------- insert codes to create algo on master node </span>
+
+<span class="hljs-comment">// ------------ create algo master node  -------------</span></code></pre><ul class="list">
+<li>Deserialize  partial results from communicated harp Table</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-keyword">int</span>[] pid = partialResultTable.getPartitionIDs().toIntArray();
+<span class="hljs-keyword">for</span>(<span class="hljs-keyword">int</span> j = <span class="hljs-number">0</span>; j&lt; pid.length; j++){
+<span class="hljs-keyword">try</span> {
+linearRegressionTrainingMaster.input.add(MasterInputId.partialModels,
+deserializePartialResult(partialResultTable.getPartition(pid[j]).get())); 
+} <span class="hljs-keyword">catch</span> (Exception e) 
+{  
+System.out.println(<span class="hljs-string">"Fail to deserilize partialResultTable"</span> + e.toString());
+e.printStackTrace();
+}
+}</code></pre><ul class="list">
+<li>Launch compute() method and fetch model data as result</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-comment">// ----------- insert codes to finalize compute, retrieve results and model </span>
+
+<span class="hljs-comment">// ------------finalize compute, retrieve results and model---------------</span>
+}</code></pre><h2 id="test-model-&-print-out-results"><a class="header-link" href="#test-model-&-print-out-results"></a>Test model &amp; Print out results</h2>
+<ul class="list">
+<li>Create a prediction algo object, load in test data and trained model</li>
+</ul>
+<pre class="hljs"><code>PredictionBatch linearRegressionPredict = <span class="hljs-keyword">new</span> PredictionBatch(
+daal_Context, Float.class, PredictionMethod.defaultDense);
+<span class="hljs-comment">// -------- insert codes to get test data, load test data and model </span>
+<span class="hljs-comment">// -------- get test data, load test data and model --------</span></code></pre><ul class="list">
+<li>Predict algo compute(), retrieve and print testing results</li>
+</ul>
+<pre class="hljs"><code><span class="hljs-comment">// Compute the prediction results </span>
+predictionResult = linearRegressionPredict.compute();
+results = predictionResult.get(PredictionResultId.prediction);
+
+<span class="hljs-comment">// print prediction results </span>
+printResults(testGroundTruth, predictionResult, conf);</code></pre>    </article>
+  </body>
+</html>
