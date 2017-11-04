@@ -1,0 +1,176 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+    <title>Harp-DAAL Hands-on: K-means Clustering</title>
+    <link type="text/css" rel="stylesheet" href="assets/css/github-markdown.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/pilcrow.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/hljs-github.min.css"/>
+  </head>
+  <body>
+    <article class="markdown-body"><h1 id="harp-daal-hands-on:-k-means-clustering"><a class="header-link" href="#harp-daal-hands-on:-k-means-clustering"></a>Harp-DAAL Hands-on: K-means Clustering</h1>
+<p>K-means is a widely used clustering algorithm in machine learning community. 
+It iteratively computes the distance between each training point to every centroids, 
+re-assigns the training point to new cluster and re-compute the new centroid of each cluster. </p>
+<p>This hands-on includes two tasks</p>
+<ul class="list">
+<li>Write a Harp-DAAL K-means program by using Java API</li>
+<li>Run and tune Harp-DAAL K-means from an image clustering application via python API </li>
+</ul>
+<p>Users are supposed to get an access to a machine with sudo permission and pre-installed docker environment. </p>
+<h2 id="environment-setups"><a class="header-link" href="#environment-setups"></a>Environment Setups</h2>
+<p>Execute the two commands to load in docker image and launch a container instance.</p>
+<pre class="hljs"><code><span class="hljs-comment"># Download an image</span>
+sudo docker pull lee212/harp-daal:icc_included
+<span class="hljs-comment"># Start a container</span>
+sudo docker run -it lee212/harp-daal:icc_included /etc/bootstrap.sh -bash</code></pre><p>If network is not available, a docker image in tar file is provided with the instructions to load. 
+<a href="https://docs.docker.com/engine/reference/commandline/load/">https://docs.docker.com/engine/reference/commandline/load/</a></p>
+<p>The <em>bootstrap</em> script shall launch a Hadoop Cluster and setup all the environment variables. 
+To verify the Hadoop status</p>
+<pre class="hljs"><code><span class="hljs-comment">## To check the status of HDFS</span>
+bin/hdfs dfsadmin -report
+<span class="hljs-comment">## To check the status of Yarn </span>
+bin/yarn node -list</code></pre><p>and the env vars</p>
+<pre class="hljs"><code><span class="hljs-built_in">echo</span> <span class="hljs-variable">$HADOOP_HOME</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$HARP_JAR</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$HARP_DAAL_JAR</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$DAALROOT</span>
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$PYTHONPATH</span></code></pre><p>If the script fails to complete these steps, users could manually set them </p>
+<pre class="hljs"><code><span class="hljs-built_in">export</span> HADOOP_HOME=&lt;path to hadoop home folder&gt;
+<span class="hljs-built_in">export</span> HARP_JAR=&lt;path to&gt;/harp-app-1.0-SNAPSHOT.jar
+<span class="hljs-built_in">export</span> HARP_DAAL_JAR=&lt;path to&gt;/harp-daal-app-1.0-SNAPSHOT.jar
+<span class="hljs-built_in">export</span> DAALROOT=&lt;path to your compiled daal folder&gt;
+<span class="hljs-built_in">export</span> PYTHONPATH=&lt;path to&gt;/harp-daal-python</code></pre><p>and launch the hadoop daemons</p>
+<pre class="hljs"><code><span class="hljs-comment">## launch HDFS service</span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/sbin/start-dfs.sh
+<span class="hljs-comment">## launch yarn daemons</span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/sbin/start-yarn.sh</code></pre><h2 id="program-k-means-via-java-apis"><a class="header-link" href="#program-k-means-via-java-apis"></a>Program K-means via Java APIs</h2>
+<p>Harp-DAAL framework provides developers of Java API to implement inter-mapper communication patterns and invoke intra-node DAAL kernels. 
+The K-means source files are located at 
+<strong>harp-daal-app/src/main/java/edu/iu/daal_tutorial/daal_kmeans</strong></p>
+<p>Users shall edit the source file <strong>KMeansDaalCollectiveMapper.java</strong>, which is a user-defined function for Harp-DAAL mapper. 
+Currently, the function is only a skeleton, and users will go through 7 steps to finish 
+a complete Harp-DAAL-Kmeans application as indicated in the following code snippet. </p>
+<pre class="hljs"><code><span class="hljs-function"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title">runKmeans</span><span class="hljs-params">(List&lt;String&gt; fileNames, Configuration conf, Context context)</span>
+</span>{
+    <span class="hljs-comment">// ---------- load in training data ----------</span>
+    <span class="hljs-comment">// ---------- load in centroids (model) data ----------</span>
+    <span class="hljs-comment">// ---------- convert training data from harp to DAAL ----------</span>
+    <span class="hljs-comment">// ---------- setup daal kernels ----------</span>
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">int</span> i=<span class="hljs-number">0</span>; i&lt; iteration; i++)
+    {
+        <span class="hljs-comment">// convert centroids from harp side to daal side</span>
+        <span class="hljs-comment">//local computation at DAAL side</span>
+        <span class="hljs-comment">// inter-mapper communication at harp side</span>
+    }
+}</code></pre><p>The codes of missing steps are already packaged into private member functions of <em>KMeansDaalCollectiveMapper.java</em>. 
+Please refer to function definitions for all the implementation details.
+After adding codes at each step, re-compile the harp-daal-application by maven
+at the root harp directory (where the pom.xml resides) </p>
+<pre class="hljs"><code>mvn clean package</code></pre><p>and re-run the application on Hadoop cluster</p>
+<pre class="hljs"><code>./test_kmeans_tutorial.sh</code></pre><h3 id="load-training-data-&-centroids-(model)-data"><a class="header-link" href="#load-training-data-&-centroids-(model)-data"></a>Load Training Data &amp; Centroids (Model) Data</h3>
+<p>Use the following function to load in training data (vectors) from HDFS in parallel</p>
+<pre class="hljs"><code><span class="hljs-comment">// create a pointArray</span>
+List&lt;<span class="hljs-keyword">double</span>[]&gt; pointArrays = <span class="hljs-keyword">new</span> LinkedList&lt;&gt;();
+<span class="hljs-function"><span class="hljs-keyword">void</span> <span class="hljs-title">LoadTrainingData</span><span class="hljs-params">(pointArrays)</span></span>;</code></pre><p>Similarly, create a harp table object <em>cenTable</em> and load in centroid data from HDFS. 
+Because centroid data are requested by all the mappers, load them at master mapper and 
+broadcast them to all the other mappers. </p>
+<pre class="hljs"><code><span class="hljs-comment">// create a table to hold centroids data</span>
+Table&lt;DoubleArray&gt; cenTable = <span class="hljs-keyword">new</span> Table&lt;&gt;(<span class="hljs-number">0</span>, <span class="hljs-keyword">new</span> DoubleArrPlus());
+<span class="hljs-comment">// load centroids only on master mapper</span>
+<span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.isMaster()) 
+{
+    createCenTable(cenTable);
+    loadCentroids(cenTable);
+}
+<span class="hljs-comment">// Bcast centroids to other mappers</span>
+bcastCentroids(cenTable, <span class="hljs-keyword">this</span>.getMasterID());</code></pre><h3 id="convert-training-data-from-harp-side-to-daal-side"><a class="header-link" href="#convert-training-data-from-harp-side-to-daal-side"></a>Convert Training Data from Harp side to DAAL side</h3>
+<p>The training data loaded from HDFS are stored at Java heap memory. To invoke DAAL kernel, convert them into 
+the DAAL <em>NumericTable</em> </p>
+<pre class="hljs"><code>NumericTable trainingdata_daal = convertTrainData(pointArrays);</code></pre><p>It allocates native memory for <em>NumericTable</em> and copy data from <em>pointArrays</em> to <em>trainingdata_daal</em></p>
+<h3 id="create-and-setup-daal-k-means-kernel"><a class="header-link" href="#create-and-setup-daal-k-means-kernel"></a>Create and setup DAAL K-means kernel</h3>
+<p>DAAL provides the following Java API for invoking their low-level native kernels written for K-means</p>
+<pre class="hljs"><code><span class="hljs-keyword">import</span> com.intel.daal.algorithms.kmeans.*;
+<span class="hljs-keyword">import</span> com.intel.daal.algorithms.kmeans.init.*;
+<span class="hljs-keyword">import</span> com.intel.daal.services.Environment;</code></pre><p>Call them by specifying the input training data object and centroids number </p>
+<pre class="hljs"><code><span class="hljs-comment">// create a daal kmeans kernel object</span>
+DistributedStep1Local kmeansLocal = <span class="hljs-keyword">new</span> DistributedStep1Local(daal_Context, Double.class, Method.defaultDense, numCentroids);
+<span class="hljs-comment">// set up input training data</span>
+kmeansLocal.input.set(InputId.data, pointsArray_daal);</code></pre><p>As DAAL uses MKL and TBB at its implementation, specify the number of threads used by DAAL (by default a maximal available threads on processor)</p>
+<pre class="hljs"><code><span class="hljs-comment">// add Environment </span>
+<span class="hljs-keyword">import</span> com.intel.daal.services.Environment;
+<span class="hljs-comment">// specify the threads used in DAAL kernel</span>
+Environment.setNumberOfThreads(numThreads);</code></pre><p>Finally, create another <em>NumericTable</em> to store centroids (model) data at DAAL side
+<em>tableSize</em> refers to the number of centroids and <em>feature_dim</em> equals the feature dimension of training points</p>
+<pre class="hljs"><code>NumericTable cenTable_daal = createCenTableDAAL(tableSize, feature_dim);</code></pre><h3 id="convert-centroids-data-from-harp-to-daal"><a class="header-link" href="#convert-centroids-data-from-harp-to-daal"></a>Convert Centroids data from Harp to DAAL</h3>
+<p>Centroids are stored in harp table <em>cenTable</em> for inter-mapper communication. Convert them 
+to DAAL within each iteration of local computation. </p>
+<pre class="hljs"><code>convertModelData(cenTable, cenTable_daal);</code></pre><h3 id="local-computation-by-daal-kernel"><a class="header-link" href="#local-computation-by-daal-kernel"></a>Local Computation by DAAL kernel</h3>
+<p>Call DAAL K-means kernels of local computation at each iteration.</p>
+<pre class="hljs"><code><span class="hljs-comment">// specify centroids data to daal kernel </span>
+kmeansLocal.input.set(InputId.inputCentroids, cenTable_daal);
+<span class="hljs-comment">// first step of local computation by using DAAL kernels to get partial result</span>
+PartialResult pres = kmeansLocal.compute();</code></pre><h3 id="inter-mapper-communication"><a class="header-link" href="#inter-mapper-communication"></a>Inter-Mapper Communication</h3>
+<p>Harp-DAAL-Kmeans adopts an <em>allreduce</em> computation model, where each mapper keeps a local copy of the whole model data (centroids). 
+However, it provides different communication operations to synchronize model data among mappers. </p>
+<ul class="list">
+<li>Regroup &amp; Allgather (default)</li>
+<li>Allreduce</li>
+<li>Broadcast &amp; Reduce</li>
+<li>Push-Pull</li>
+</ul>
+<p>All of the operations will take in two arguments, 1) <em>cenTable</em> at harp side, 2) partial results computed from DAAL; Internally, the 
+data is retrieved from DAAL partial results and communicated by Harp.</p>
+<p>In Regroup &amp; Allgather operation, it first combines the same centroid from different mappers and re-distribute them 
+to mappers with a specified order. After average operation on the centroids, an allgather operation lets every mapper get 
+a complete copy of the averaged centroids data. </p>
+<pre class="hljs"><code>comm_regroup_allgather(cenTable, pres);</code></pre><p>In Allreduce operation, the centroids are reduced and copied to every mapper. Then an average operation apply to them on each mapper to 
+get the results. </p>
+<pre class="hljs"><code>comm_allreduce(cenTable, pres);</code></pre><p>In Broadcast &amp; Reduce, it first reduces centroids to a single mapper (master mapper), where the average operation applied. It then broadcasts
+the averaged centroids data to every other mapper. </p>
+<pre class="hljs"><code>comm_broadcastreduce(cenTable, pres);</code></pre><p>In push-pull operation, it first pushes centroids data from <em>cenTable</em> of local mapper to a <em>globalTable</em>, which is consistent across all the mappers. 
+It then applies the average operation on <em>globalTable</em> from each mapper, and finally, pull the results from <em>globalTable</em> to update the local <em>cenTable</em>.</p>
+<pre class="hljs"><code>Table&lt;DoubleArray&gt; globalTable = <span class="hljs-keyword">new</span> Table&lt;DoubleArray&gt;(<span class="hljs-number">0</span>, <span class="hljs-keyword">new</span> DoubleArrPlus());
+comm_push_pull(cenTable, globalTable, pres);</code></pre><h2 id="invoke-harp-daal-k-means-via-python-interface"><a class="header-link" href="#invoke-harp-daal-k-means-via-python-interface"></a>Invoke Harp-DAAL K-means via Python Interface</h2>
+<p>Besides, the Java programming API, Harp-DAAL currently provides another Python API, which interfaces 
+Harp-DAAL with other python written applications. By just adding several lines of python code, you 
+are able to deploy the original python application on Hadoop Cluster and boost the performance by 
+leveraging DAAL kernels. </p>
+<p>The python codes for image clustering is located at the path</p>
+<pre class="hljs"><code><span class="hljs-built_in">cd</span> <span class="hljs-variable">${PYTHONPATH}</span>/examples/scdemo/tutorial</code></pre><h3 id="python-k-means-codes-without-harp-daal"><a class="header-link" href="#python-k-means-codes-without-harp-daal"></a>Python K-means codes without Harp-DAAL</h3>
+<p><em>demo_kmeans_local.py</em> is the original python codes of image clustering without Harp-DAAL. </p>
+<pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
+<span class="hljs-comment"># call kmeans module </span>
+<span class="hljs-comment"># ############################################################################</span>
+bench_k_means(KMeans(init=<span class="hljs-string">'random'</span>, n_clusters=n_digits, n_init=<span class="hljs-number">50</span>), name=<span class="hljs-string">"local"</span>, data=data)</code></pre><p>Run from command line</p>
+<pre class="hljs"><code>python <span class="hljs-variable">${PYTHONPATH}</span>/examples/scdemo/tutorial/demo_kmeans_local.py</code></pre><h3 id="python-k-means-that-invokes-harp-daal"><a class="header-link" href="#python-k-means-that-invokes-harp-daal"></a>Python K-means that invokes Harp-DAAL</h3>
+<p><em>demo_kmeans_daal.py</em> replaces the above K-means module by a Harp-DAAL invocation</p>
+<pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
+<span class="hljs-comment"># call Harp-DAAL Kmeans module </span>
+<span class="hljs-comment"># ############################################################################</span>
+bench_k_means(DAALKMeans(n_clusters=n_digits, n_iter=<span class="hljs-number">50</span>, workdir=<span class="hljs-string">"/15scene-work"</span>), name=<span class="hljs-string">"daal"</span>, data=data)
+<span class="hljs-comment">#*******************************************************</span></code></pre><p>Run it from command line and compare the performance with that of <em>demo_kmeans_local</em>.</p>
+<pre class="hljs"><code>python <span class="hljs-variable">${PYTHONPATH}</span>/examples/scdemo/tutorial/demo_kmeans_daal.py</code></pre><h3 id="tune-harp-daal-kmeans-parameters"><a class="header-link" href="#tune-harp-daal-kmeans-parameters"></a>Tune Harp-DAAL-Kmeans Parameters</h3>
+<p><em>daal_kmeans.py</em> contains the python API to Harp-DAAL-Kmeans Java codes. 
+In the <em><strong>init</strong></em> function, tune the arguments (parameters) and compare the performance. </p>
+<pre class="hljs"><code><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">__init__</span><span class="hljs-params">(self, n_clusters=<span class="hljs-number">10</span>, n_iter=<span class="hljs-number">10</span>, init = <span class="hljs-string">'random'</span>,
+            n_node = <span class="hljs-number">1</span>, n_thread = <span class="hljs-number">8</span>, n_mem = <span class="hljs-number">10240</span>, workdir = <span class="hljs-string">"/kmeans-work"</span>)</span>:</span>
+        self.labels_ = <span class="hljs-keyword">None</span>
+        self.centroids_ = <span class="hljs-keyword">None</span>
+        self.inertia_ = <span class="hljs-number">0.</span>
+        self.n_iter = n_iter
+        self.n_clusters = n_clusters
+
+        <span class="hljs-comment">#daal init parameters</span>
+        self.n_node = n_node
+        self.n_thread = n_thread
+        self.n_mem = n_mem
+        self.workdir = workdir</code></pre><ul class="list">
+<li>Increase iteration number <em>n_iter</em> to check the changes in results</li>
+<li>Increase the thread number <em>self.n_thread</em> to check the performance boost by multi-threading</li>
+<li>Increase the mapper number <em>self.n_node</em> to check benefits from node-level parallelism.</li>
+</ul>
+    </article>
+  </body>
+</html>
