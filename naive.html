@@ -1,0 +1,38 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+    <title>Demo Application : Text Classification</title>
+    <link type="text/css" rel="stylesheet" href="assets/css/github-markdown.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/pilcrow.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/hljs-github.min.css"/>
+  </head>
+  <body>
+    <article class="markdown-body"><h1 id="demo-application-:-text-classification"><a class="header-link" href="#demo-application-:-text-classification"></a>Demo Application : Text Classification</h1>
+<h2 id="invoke-harp-daal-naivebayes-via-python-interface"><a class="header-link" href="#invoke-harp-daal-naivebayes-via-python-interface"></a>Invoke Harp-DAAL NaiveBayes via Python Interface</h2>
+<p>Besides, the Java programming API, Harp-DAAL currently provides another Python API, which interfaces 
+Harp-DAAL with other python written applications. By just adding several lines of python code, you 
+are able to deploy the original python application on Hadoop Cluster and boost the performance by 
+leveraging DAAL kernels. </p>
+<p>The python codes for demo application is located at the path</p>
+<pre class="hljs"><code><span class="hljs-variable">${PYTHONPATH}</span>/examples/scdemo/tutorial</code></pre><h3 id="step.1-run-naivebayes-on-20news-dataset-with-python-scikit-learn"><a class="header-link" href="#step.1-run-naivebayes-on-20news-dataset-with-python-scikit-learn"></a>Step.1 Run NaiveBayes on 20news Dataset with Python Scikit-Learn</h3>
+<p>Run the pipeline from feature extraction, training, evaluation and finally check the clusters results.</p>
+<pre class="hljs"><code>cd ${PYTHONPATH}/examples/scdemo/test
+../tutorial/run_nb.sh</code></pre><p class="img-container"><img src="nb_runlocal.png" alt="screen shot of results"></p>
+<h3 id="step.2-modify-to-invokes-harp-daal"><a class="header-link" href="#step.2-modify-to-invokes-harp-daal"></a>Step.2 Modify to invokes Harp-DAAL</h3>
+<p><em>demo_nb_local.py</em> is the original python codes of classification without Harp-DAAL. </p>
+<pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
+<span class="hljs-comment"># call NaiveBayes module </span>
+<span class="hljs-comment"># ############################################################################</span>
+BernoulliNB()</code></pre><p><em>demo_nb_daal.py</em> replaces the above NaiveBayes module by a Harp-DAAL invocation</p>
+<pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
+<span class="hljs-comment"># call Harp-DAAL NaiveBayes module </span>
+<span class="hljs-comment"># ############################################################################</span>
+DAALNavieBayes(n_node = <span class="hljs-number">1</span>, n_thread = <span class="hljs-number">8</span>, workdir=<span class="hljs-string">'/20news/'</span>)</code></pre><p>View all the modifications by</p>
+<pre class="hljs"><code>diff ../tutorial/demo_nb_local.py ../tutorial/demo_nb_daal.py</code></pre><h3 id="step.3-invokes-harp-daal"><a class="header-link" href="#step.3-invokes-harp-daal"></a>Step.3 Invokes Harp-DAAL</h3>
+<pre class="hljs"><code>../tutorial/run_nb.sh daal</code></pre><h3 id="step.4-check-the-results-of-performance"><a class="header-link" href="#step.4-check-the-results-of-performance"></a>Step.4 Check the results of performance</h3>
+<p>Download the result files, naivebayes<em>perf</em>{local}{daal}.png</p>
+    </article>
+  </body>
+</html>
