@@ -10,16 +10,110 @@
   </head>
   <body>
     <article class="markdown-body"><h1 id="demo-application-:-text-classification"><a class="header-link" href="#demo-application-:-text-classification"></a>Demo Application : Text Classification</h1>
-<h2 id="invoke-harp-daal-naivebayes-via-python-interface"><a class="header-link" href="#invoke-harp-daal-naivebayes-via-python-interface"></a>Invoke Harp-DAAL NaiveBayes via Python Interface</h2>
+<h2 id="prerequisites"><a class="header-link" href="#prerequisites"></a>Prerequisites</h2>
+<h3 id="download-docker-image-and-launch-container-instance"><a class="header-link" href="#download-docker-image-and-launch-container-instance"></a>Download Docker Image and launch Container Instance</h3>
+<p>Download the image and launch the container</p>
+<pre class="hljs"><code><span class="hljs-comment"># Download an image</span>
+sudo docker pull dscspidal/harp-daal
+<span class="hljs-comment"># Start a container</span>
+sudo docker run -it dscspidal/harp-daal /etc/bootstrap.sh -bash</code></pre><p>After executing the last command you will be logged on to the docker image and use the 
+following commands to build the latest version of harp-daal</p>
+<pre class="hljs"><code><span class="hljs-built_in">cd</span> harp/
+git pull origin master
+mvn clean package</code></pre><p>The container takes up to 20GB disk space. If the machine has more than 50GB disk space, there shall be no problem to 
+launch the container instance. Otherwise, users could use the following commands to clean up the docker space </p>
+<pre class="hljs"><code><span class="hljs-comment"># Remove useless docker images</span>
+sudo docker image rm &lt;useless-docker-image&gt;
+<span class="hljs-comment"># Remove exited containers</span>
+sudo docker rm $(sudo docker ps <span class="hljs-_">-a</span> <span class="hljs-_">-f</span> status=exited -q)
+<span class="hljs-comment"># Clean up all dangling cache</span>
+sudo docker system prune</code></pre><p>Find the docker container ID</p>
+<pre class="hljs"><code>sudo docker ps</code></pre><p>and log into the docker </p>
+<pre class="hljs"><code>sudo docker <span class="hljs-built_in">exec</span> -it &lt;container_id&gt; bash</code></pre><h3 id="dependencies-and-environment-variables"><a class="header-link" href="#dependencies-and-environment-variables"></a>Dependencies and Environment Variables</h3>
+<p>The hands-on codes have the dependencies as follows,</p>
+<ul class="list">
+<li>Python 2.7+</li>
+<li>Python module Numpy </li>
+<li>Hadoop 2.6.0/Hadoop 2.6.5</li>
+<li>DAAL 2018+ </li>
+</ul>
+<p>The following section describes where the important components of the Tutorial are</p>
+<ol class="list">
+<li>Harp Source Code - /harp                                                                   </li>
+<li>Hadoop Installation - /usr/local/hadoop                                                        </li>
+<li>K-Means tutorial code - /harp/harp-daal-app/src/main/java/edu/iu/daal_tutorial/daal_kmeans      </li>
+<li>Python Code - /harp/harp-daal-python/examples/daal/                                   </li>
+</ol>
+<p>The docker image already includes them and other tools, the image has the following machine learning algorithms</p>
+<pre class="hljs"><code><span class="hljs-comment"># List of HarpDaal applications (in harp-daal-&lt;version&gt;.jar)</span>
+edu.iu.daal_als.ALSDaalLauncher
+edu.iu.daal_cov.COVDaalLauncher
+edu.iu.daal_kmeans.regroupallgather.KMeansDaalLauncher
+edu.iu.daal_linreg.L<span class="hljs-keyword">in</span>RegDaalLauncher
+edu.iu.daal_mom.MOMDaalLauncher
+edu.iu.daal_naive.NaiveDaalLauncher
+edu.iu.daal_nn.NNDaalLauncher
+edu.iu.daal_pca.PCADaalLauncher
+edu.iu.daal_qr.QRDaalLauncher
+edu.iu.daal_ridgereg.RidgeRegDaalLauncher
+edu.iu.daal_sgd.SGDDaalLauncher
+edu.iu.daal_svd.SVDDaalLauncher
+
+<span class="hljs-comment"># List of HarpDaal examples in Python (/harp/harp-daal-python/examples/daal/)</span>
+run_harp_daal_ALSDaal.py
+run_harp_daal_COVDaal.py
+run_harp_daal_KMeansDaal.py
+run_harp_daal_L<span class="hljs-keyword">in</span>RegDaal.py
+run_harp_daal_MOMDaal.py
+run_harp_daal_NNDaal.py
+run_harp_daal_NaiveDaal.py
+run_harp_daal_PCADaal.py
+run_harp_daal_QRDaal.py
+run_harp_daal_RidgeRegDaal.py
+run_harp_daal_SGDDaal.py
+run_harp_daal_SVDDaal.py
+
+<span class="hljs-comment"># Image clustering example</span>
+/harp/harp-daal-python/examples/scdemo/tutorial/</code></pre><p>The <em>bootstrap</em> script shall launch a Hadoop Cluster and set up all the environment variables. 
+To verify the Hadoop status</p>
+<pre class="hljs"><code><span class="hljs-comment">## To check the status of HDFS</span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/bin/hdfs dfsadmin -report
+<span class="hljs-comment">## To check the status of Yarn </span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/bin/yarn node -list</code></pre><p>Check out the environment variables to figure out the locations of the important files.</p>
+<pre class="hljs"><code><span class="hljs-built_in">echo</span> <span class="hljs-variable">$HADOOP_HOME</span>
+/usr/<span class="hljs-built_in">local</span>/hadoop
+
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$HARP_JAR</span>
+/usr/<span class="hljs-built_in">local</span>/hadoop/harp-app-1.0-SNAPSHOT.jar
+
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$HARP_DAAL_JAR</span>
+/usr/<span class="hljs-built_in">local</span>/hadoop/harp-daal-app-1.0-SNAPSHOT.jar
+
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$DAALROOT</span>
+/harp/harp-daal-app/__release__lnx/daal
+
+<span class="hljs-built_in">echo</span> <span class="hljs-variable">$PYTHONPATH</span>
+/harp/harp-daal-python</code></pre><p>If the script fails to complete these steps, users could manually set them </p>
+<pre class="hljs"><code><span class="hljs-built_in">export</span> HADOOP_HOME=&lt;path to hadoop home folder&gt;
+<span class="hljs-built_in">export</span> HARP_JAR=&lt;path to&gt;/harp-app-1.0-SNAPSHOT.jar
+<span class="hljs-built_in">export</span> HARP_DAAL_JAR=&lt;path to&gt;/harp-daal-app-1.0-SNAPSHOT.jar
+<span class="hljs-built_in">export</span> DAALROOT=&lt;path to your compiled daal folder&gt;
+<span class="hljs-built_in">export</span> PYTHONPATH=&lt;path to&gt;/harp-daal-python</code></pre><p>In a situation where you would like to stop and restart Hadoop, use the following commands</p>
+<pre class="hljs"><code><span class="hljs-comment">## stop all services</span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/sbin/stop-all.sh
+<span class="hljs-comment">## launch HDFS service</span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/sbin/start-dfs.sh
+<span class="hljs-comment">## launch yarn daemons</span>
+<span class="hljs-variable">${HADOOP_HOME}</span>/sbin/start-yarn.sh</code></pre><h2 id="invoke-harp-daal-naivebayes-via-python-interface"><a class="header-link" href="#invoke-harp-daal-naivebayes-via-python-interface"></a>Invoke Harp-DAAL NaiveBayes via Python Interface</h2>
 <p>Besides, the Java programming API, Harp-DAAL currently provides another Python API, which interfaces 
 Harp-DAAL with other python written applications. By just adding several lines of python code, you 
 are able to deploy the original python application on Hadoop Cluster and boost the performance by 
 leveraging DAAL kernels. </p>
 <p>The python codes for demo application is located at the path</p>
 <pre class="hljs"><code><span class="hljs-variable">${PYTHONPATH}</span>/examples/scdemo/tutorial</code></pre><h3 id="step.1-run-naivebayes-on-20news-dataset-with-python-scikit-learn"><a class="header-link" href="#step.1-run-naivebayes-on-20news-dataset-with-python-scikit-learn"></a>Step.1 Run NaiveBayes on 20news Dataset with Python Scikit-Learn</h3>
-<p>Run the pipeline from feature extraction, training, evaluation and finally check the clusters results.</p>
+<p>Run the pipeline from feature extraction, training, evaluation and finally check the classification results.</p>
 <pre class="hljs"><code>cd ${PYTHONPATH}/examples/scdemo/test
-../tutorial/run_nb.sh</code></pre><p class="img-container"><img src="nb_runlocal.png" alt="screen shot of results"></p>
+../tutorial/run_nb.sh</code></pre><p class="img-container"><img src="https://raw.githubusercontent.com/DSC-SPIDAL/harp/master/harp-daal-python/examples/scdemo/tutorial/nb_runlocal.png" alt="screen shot of results"></p>
 <h3 id="step.2-modify-to-invokes-harp-daal"><a class="header-link" href="#step.2-modify-to-invokes-harp-daal"></a>Step.2 Modify to invokes Harp-DAAL</h3>
 <p><em>demo_nb_local.py</em> is the original python codes of classification without Harp-DAAL. </p>
 <pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
