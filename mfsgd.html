@@ -1,0 +1,36 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
+    <title>Demo Application : Recommender System</title>
+    <link type="text/css" rel="stylesheet" href="assets/css/github-markdown.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/pilcrow.css">
+    <link type="text/css" rel="stylesheet" href="assets/css/hljs-github.min.css"/>
+  </head>
+  <body>
+    <article class="markdown-body"><h1 id="demo-application-:-recommender-system"><a class="header-link" href="#demo-application-:-recommender-system"></a>Demo Application : Recommender System</h1>
+<h2 id="invoke-harp-daal-matrixfactorization-via-python-interface"><a class="header-link" href="#invoke-harp-daal-matrixfactorization-via-python-interface"></a>Invoke Harp-DAAL MatrixFactorization via Python Interface</h2>
+<p>Besides, the Java programming API, Harp-DAAL currently provides another Python API, which interfaces 
+Harp-DAAL with other python written applications. By just adding several lines of python code, you 
+are able to deploy the original python application on Hadoop Cluster and boost the performance by 
+leveraging DAAL kernels. </p>
+<p>The python codes for demo application is located at the path</p>
+<pre class="hljs"><code><span class="hljs-variable">${PYTHONPATH}</span>/examples/scdemo/tutorial</code></pre><h3 id="step.1-run-matrixfactorization(mfsgd)-on-movielens-1m-dataset-with-python-scikit-learn-suprise"><a class="header-link" href="#step.1-run-matrixfactorization(mfsgd)-on-movielens-1m-dataset-with-python-scikit-learn-suprise"></a>Step.1 Run MatrixFactorization(MFSGD) on movielens-1m Dataset with Python Scikit-Learn Suprise</h3>
+<p>Run the pipeline from data loading, training, evaluation and finally check results.</p>
+<pre class="hljs"><code>cd ${PYTHONPATH}/examples/scdemo/test
+../tutorial/run_mf.sh</code></pre><p class="img-container"><img src="https://raw.githubusercontent.com/DSC-SPIDAL/harp/master/harp-daal-python/examples/scdemo/tutorial/mf_runlocal.png" alt="screen shot of results"></p>
+<h3 id="step.2-modify-to-invokes-harp-daal"><a class="header-link" href="#step.2-modify-to-invokes-harp-daal"></a>Step.2 Modify to invokes Harp-DAAL</h3>
+<p><em>demo_mf_local.py</em> is the original python codes of matrix factorization without Harp-DAAL. </p>
+<pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
+<span class="hljs-comment"># call SVD module </span>
+<span class="hljs-comment"># ############################################################################</span>
+SVD(n_factors = <span class="hljs-number">100</span>, n_epochs = <span class="hljs-number">20</span>, lr_all = <span class="hljs-number">0.005</span>, reg_all = <span class="hljs-number">0.02</span>)</code></pre><p><em>demo_mf_daal.py</em> replaces the above SVD module by a Harp-DAAL invocation</p>
+<pre class="hljs"><code><span class="hljs-comment"># ############################################################################</span>
+<span class="hljs-comment"># call Harp-DAAL MatrixFactorization module </span>
+<span class="hljs-comment"># ############################################################################</span>
+DAALMFSGD(n_node = <span class="hljs-number">1</span>, n_thread = <span class="hljs-number">8</span>, n_factors = <span class="hljs-number">100</span>, n_epochs = <span class="hljs-number">20</span>, lr_all = <span class="hljs-number">0.005</span>, reg_all = <span class="hljs-number">0.02</span>)</code></pre><p>View all the modifications by</p>
+<pre class="hljs"><code>diff ../tutorial/demo_mf_local.py ../tutorial/demo_mf_daal.py</code></pre><h3 id="step.3-invokes-harp-daal"><a class="header-link" href="#step.3-invokes-harp-daal"></a>Step.3 Invokes Harp-DAAL</h3>
+<pre class="hljs"><code>../tutorial/run_mf.sh daal</code></pre>    </article>
+  </body>
+</html>
