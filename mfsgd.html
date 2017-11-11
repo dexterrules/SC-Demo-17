@@ -20,7 +20,13 @@ sudo docker run -it dscspidal/harp-daal /etc/bootstrap.sh -bash</code></pre><p>A
 following commands to build the latest version of harp-daal</p>
 <pre class="hljs"><code><span class="hljs-built_in">cd</span> harp/
 git pull origin master
-mvn clean package</code></pre><p>The container takes up to 20GB disk space. If the machine has more than 50GB disk space, there shall be no problem to 
+mvn clean package
+
+<span class="hljs-comment"># Copy all dynamic links to HDFS</span>
+hdfs dfs -mkdir -p /Hadoop/Libraries &amp;&amp; \
+hdfs dfs -put <span class="hljs-_">-f</span> <span class="hljs-variable">${DAALROOT}</span>/lib/intel64_lin/libJavaAPI.so /Hadoop/Libraries/ &amp;&amp; \
+hdfs dfs -put <span class="hljs-_">-f</span> <span class="hljs-variable">${DAALROOT}</span>/../tbb/lib/intel64_lin/gcc4.4/libtbb* /Hadoop/Libraries/ &amp;&amp; \
+hdfs dfs -put <span class="hljs-_">-f</span> <span class="hljs-variable">${HARP_DAAL_ROOT}</span>/external/omp/libiomp5.so /Hadoop/Libraries/</code></pre><p>The container takes up to 20GB disk space. If the machine has more than 50GB disk space, there shall be no problem to 
 launch the container instance. Otherwise, users could use the following commands to clean up the docker space </p>
 <pre class="hljs"><code><span class="hljs-comment"># Remove useless docker images</span>
 sudo docker image rm &lt;useless-docker-image&gt;
