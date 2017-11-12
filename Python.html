@@ -3,19 +3,31 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimal-ui">
-    <title>Python Interface to Harp and Harp-Daal</title>
+    <title>Python Interface to Harp-Daal</title>
     <link type="text/css" rel="stylesheet" href="assets/css/github-markdown.css">
     <link type="text/css" rel="stylesheet" href="assets/css/pilcrow.css">
     <link type="text/css" rel="stylesheet" href="assets/css/hljs-github.min.css"/>
   </head>
   <body>
-  	<h3 id="installation"><a class="header-link" href="SC-Demo.html">Back</h3>
-    <article class="markdown-body"><h1 id="python-interface-to-harp-and-harp-daal"><a class="header-link" href="#python-interface-to-harp-and-harp-daal"></a>Python Interface to Harp and Harp-Daal</h1>
+    <article class="markdown-body"><h1 id="python-interface-to-harp-daal"><a class="header-link" href="#python-interface-to-harp-daal"></a>Python Interface to Harp-Daal</h1>
+<h2 id="introduction"><a class="header-link" href="#introduction"></a>Introduction</h2>
+<p>This work provides a pure Python programming experience of using Harp with Hadoop. Python developers can 1) setup Harp applications from the Python side, 2) run Harp applications, and 3) print results or convert results to native Python variables. In this manual, we take KMeans as an example.</p>
+<h3 id="api-usage:"><a class="header-link" href="#api-usage:"></a>API Usage:</h3>
+<ol class="list">
+<li>In order to run the KMeans application with customized arguments, import the KMeansApplication API from the Harp Python package “harp.applications”.</li>
+<li>Configure Hadoop, Harp, and arguments by calling some configuration funtions.</li>
+<li>Run the application within Python.</li>
+<li>Call print result function or conversion function to get the result. After the data conversion, the result variable can be used with any other Python packages, such as numpy or scipy.</li>
+<li>A full source code of the usage will be provided later.</li>
+</ol>
+<h3 id="process-communication-diagram:"><a class="header-link" href="#process-communication-diagram:"></a>Process Communication Diagram:</h3>
+<p class="img-container"><img src="docs/Overview.png" alt="Process Communication Diagram for Harp-Daal Python"></p>
 <h2 id="installation"><a class="header-link" href="#installation"></a>Installation</h2>
 <p>Installation is as easy as checking out the latest code from the stable branch of <code>harp</code>.</p>
 <pre class="hljs"><code>git <span class="hljs-built_in">clone</span> https://github.com/DSC-SPIDAL/harp.git</code></pre><h3 id="dependencies"><a class="header-link" href="#dependencies"></a>Dependencies</h3>
 <p>Please have all dependencies installed.</p>
 <ul class="list">
+<li>If you use our Docker Image, all the dependencies are pre-installed.</li>
 <li>Python 2.7+</li>
 <li>Python module Numpy (Install with your <code>pip</code>)</li>
 <li>Hadoop 2.6.0/Hadoop 2.6.5</li>
@@ -24,16 +36,32 @@
 <h3 id="environment-variables"><a class="header-link" href="#environment-variables"></a>Environment Variables</h3>
 <p>After the code have been checked out and dependencies installed, please <code>export</code> all the following environment variables.</p>
 <pre class="hljs"><code><span class="hljs-comment"># Hadoop</span>
-<span class="hljs-keyword">export</span> HADOOP_HOME=&lt;path <span class="hljs-keyword">to</span> hadoop home folder&gt;
+<span class="hljs-built_in">export</span> HADOOP_HOME=&lt;path to hadoop home folder&gt;
 
 <span class="hljs-comment"># Harp</span>
-<span class="hljs-keyword">export</span> HARP_JAR=&lt;path <span class="hljs-keyword">to</span>&gt;/harp-app-<span class="hljs-number">1.0</span>-SNAPSHOT.jar
-<span class="hljs-keyword">export</span> HARP_DAAL_JAR=&lt;path <span class="hljs-keyword">to</span>&gt;/harp-daal-app-<span class="hljs-number">1.0</span>-SNAPSHOT.jar
-<span class="hljs-keyword">export</span> DAALROOT=&lt;path <span class="hljs-keyword">to</span> your compiled daal folder&gt;
-<span class="hljs-keyword">export</span> PYTHONPATH=&lt;path <span class="hljs-keyword">to</span>&gt;/harp-python</code></pre><h2 id="example-code"><a class="header-link" href="#example-code"></a>Example Code</h2>
-<p>Example code can be found under folder <code>examples</code>. For instance, to run KMeans with Harp-Daal, please run the following command:</p>
-<pre class="hljs"><code><span class="hljs-keyword">cd</span> harp-<span class="hljs-keyword">python</span>
-<span class="hljs-keyword">python</span> examples/daal/run_harp_daal_KMeansDaal.<span class="hljs-keyword">py</span></code></pre><h2 id="maintainance"><a class="header-link" href="#maintainance"></a>Maintainance</h2>
+<span class="hljs-built_in">export</span> HARP_JAR=&lt;path to&gt;/harp-app-1.0-SNAPSHOT.jar
+<span class="hljs-built_in">export</span> HARP_DAAL_JAR=&lt;path to&gt;/harp-daal-app-1.0-SNAPSHOT.jar
+<span class="hljs-built_in">export</span> DAALROOT=&lt;path to your compiled daal folder&gt;
+<span class="hljs-built_in">export</span> PYTHONPATH=&lt;path to&gt;/harp-daal-python</code></pre><h2 id="example-code"><a class="header-link" href="#example-code"></a>Example Code</h2>
+<p>Example code can be found under folder <code>harp/harp-daal-python/examples</code>. For instance, to run KMeans with Harp-Daal, please run the following command:</p>
+<pre class="hljs"><code><span class="hljs-built_in">cd</span> harp-daal-python
+python examples/daal/run_harp_daal_KMeansDaal.py
+
+<span class="hljs-comment"># All 12 examples</span>
+python examples/daal/run_harp_daal_ALSDaal.py
+python examples/daal/run_harp_daal_COVDaal.py
+python examples/daal/run_harp_daal_KMeansDaal.py
+python examples/daal/run_harp_daal_L<span class="hljs-keyword">in</span>RegDaal.py
+python examples/daal/run_harp_daal_MOMDaal.py
+python examples/daal/run_harp_daal_NNDaal.py
+python examples/daal/run_harp_daal_NaiveDaal.py
+python examples/daal/run_harp_daal_PCADaal.py
+python examples/daal/run_harp_daal_QRDaal.py
+python examples/daal/run_harp_daal_RidgeRegDaal.py
+python examples/daal/run_harp_daal_SGDDaal.py
+python examples/daal/run_harp_daal_SVDDaal.py</code></pre><h2 id="arguments-and-testing-results"><a class="header-link" href="#arguments-and-testing-results"></a>Arguments and Testing Results</h2>
+<p class="img-container"><img src="docs/Results.png" alt="Arguments and Testing Results for Harp-Daal Python"></p>
+<h2 id="maintainance"><a class="header-link" href="#maintainance"></a>Maintainance</h2>
 <p>Please raise issues in GitHub if you have any problems. Pull requests are very welcome.</p>
     </article>
   </body>
