@@ -13,7 +13,9 @@
 <h2 id="prerequisites"><a class="header-link" href="#prerequisites"></a>Prerequisites</h2>
 <h3 id="download-docker-image-and-launch-container-instance"><a class="header-link" href="#download-docker-image-and-launch-container-instance"></a>Download Docker Image and launch Container Instance</h3>
 <p>Download the image and launch the container</p>
-<pre class="hljs"><code><span class="hljs-comment"># Download an image</span>
+<pre class="hljs"><code><span class="hljs-comment"># start the docker</span>
+sudo systemctl start docker
+<span class="hljs-comment"># Download an image</span>
 sudo docker pull dscspidal/harp-daal
 <span class="hljs-comment"># Start a container</span>
 sudo docker run -it dscspidal/harp-daal /etc/bootstrap.sh -bash</code></pre><p>After executing the last command you will be logged on to the docker image and use the 
