@@ -21,15 +21,19 @@ re-assigns the training point to new cluster and re-compute the new centroid of 
 <p>Users are supposed to get an access to a machine with sudo permission and pre-installed docker environment. </p>
 <h2 id="prerequisites"><a class="header-link" href="#prerequisites"></a>Prerequisites</h2>
 <h3 id="download-docker-image-and-launch-container-instance"><a class="header-link" href="#download-docker-image-and-launch-container-instance"></a>Download Docker Image and launch Container Instance</h3>
-<p>Download the image and launch the container</p>
-<pre class="hljs"><code><span class="hljs-comment"># Download an image</span>
+<p>Download the image and launch the container. Before downloading check weather the VM already has the docker image.</p>
+<pre class="hljs"><code><span class="hljs-comment"># start the docker</span>
+sudo systemctl start docker
+<span class="hljs-comment"># Check installed images</span>
+sudo docker image ls
+<span class="hljs-comment"># Download an image if not installed otherwise skip this step</span>
 sudo docker pull dscspidal/harp-daal
 <span class="hljs-comment"># Start a container</span>
 sudo docker run -it dscspidal/harp-daal /etc/bootstrap.sh -bash</code></pre><p>After executing the last command you will be logged on to the docker image and use the 
 following commands to build the latest version of harp-daal</p>
-<pre class="hljs"><code><span class="hljs-built_in">cd</span> harp/
+<pre class="hljs"><code><span class="hljs-built_in">cd</span> /harp
 git pull origin master
-mvn clean package
+mvn package
 
 <span class="hljs-comment"># Copy all dynamic links to HDFS</span>
 hdfs dfs -mkdir -p /Hadoop/Libraries &amp;&amp; \
@@ -145,7 +149,7 @@ a complete Harp-DAAL-Kmeans application as indicated in the following code snipp
 implementation details of each step. After adding codes at each step, re-compile the harp-daal-application 
 by maven at the root harp directory (where the pom.xml resides) </p>
 <pre class="hljs"><code><span class="hljs-built_in">cd</span> /harp
-mvn clean package</code></pre><p>and re-run the application on Hadoop cluster</p>
+mvn package</code></pre><p>and re-run the application on Hadoop cluster</p>
 <pre class="hljs"><code><span class="hljs-built_in">cd</span> /harp/harp-daal-app/test_scripts
 ./harp-daal-tutorial-kmeans.sh</code></pre><p>While application is running you can use Hadoop commands to manage the application.</p>
 <pre class="hljs"><code><span class="hljs-built_in">cd</span> <span class="hljs-variable">$HADOOP_HOME</span>
